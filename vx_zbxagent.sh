@@ -2,107 +2,162 @@
 #set -x
 # ****************************************************************************
 # *
-# * Creation:           (c) 2004-2020  Cybionet - Ugly Code Division
+# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               vx_zbxagent.sh
-# * Version:            0.1.8
+# * Version:            0.1.9
 # *
-# * Comment:            Customization script for Zabbix Agent LTS installation.
+# * Comment:            Zabbix Agent LTS installation script under Ubuntu LTS Server.
 # *
-# * Date: September 04, 2017
-# * Change: September 25, 2020
+# * Creation: September 04, 2017
+# * Change:   February 10, 2022
 # *
 # ****************************************************************************
 
-#############################################################################################
-# ## VARIABLE
 
-# ## Do you want to install the distribution Zabbix (0=Self selected, 1=Distribution)
-installDefault="0"
+#############################################################################################
+# ## CUSTOM VARIABLES
+
+# ## Force configuration of the script.
+# ## Value: enabled (true), disabled (false).
+isConfigured='false'
+
+# ## Do you want to install the distribution Zabbix Agent [0=Zabbix Repo (recommended), 1=Distribution Repo].
+installDefault=0
 
 # ## Zabbix Agent version.
-# ## 3.x: 3.0, 3.2, 3.4
-# ## 4.x: 4.0, 4.2, 4.4
-# ## 5.x: 5.0
+# ## 3.x: 3.0, 3.2, 3.4 (Obsolete)
+# ## 4.x: 4.0, 4.2, 4.5
+# ## 5.x: 5.0, 5.5
 # ## 3.0, 4.0 and 5.0 are LTS version.
-zbxVers="5.0"
-
-# ## Distribution: ubuntu, debian, raspbian.
-osDist=$(lsb_release -i | awk '{print $3}')
-
-# ## Version:
-# ## Ubuntu: bionic, trusty, xenial.
-# ## Debian: buster, jessie, stretch.
-# ## Raspbian: buster, stretch.
-osVers=$(lsb_release -c | awk '{print $2}')
-
-# ## Communication protocol with the repository (http | https | ftp).
-protocol="https"
-
-# ## Deployment URL.
-urlDeploy="hub.cybionet.online"
+zbxVers='5.0'
 
 # ## (Without the trailing slash)
 scriptLocation="/opt/zabbix"
 
 
 #############################################################################################
+# ## VARIABLES
+
+declare -r isConfigured
+declare -ir installDefault
+declare -r zbxVers
+declare -r scriptLocation
+
+# ## Distribution: ubuntu, debian, raspbian.
+osDist=$(lsb_release -i | awk '{print $3}')
+declare -r osDist
+
+# ## Supported version.
+# ## Ubuntu: focal, bionic, trusty.
+# ## Debian: bulleye, buster, jessie, stretch.
+# ## Raspbian: buster, stretch.
+osVers=$(lsb_release -c | awk '{print $2}')
+declare -r osVers
+
+
+#############################################################################################
 # ## VERIFICATION
 
-# ## Check if the script are running under root user.
-if [ "${EUID}" -ne "0" ]; then
-  echo -n -e "\n\n\n\e[38;5;208mWARNING:This script must be run as root.\e[0m"
+# ## Check if the script is configured.
+if [ "${isConfigured}" == 'false' ] ; then
+  echo -n -e '\e[38;5;208mWARNING: Customize the settings to match your environment. Then set the "isConfigured" variable to "true".\n\e[0m'    
   exit 0
 fi
 
-# ## Last chance. Ask before execute.
-echo -n -e "\n\e[38;5;208mWARNING:\e[0m You are preparing to install the Zabbix Agent service. Press 'y' to continue, or any other key to exit: "
-read ANSWER
-if [[ "${ANSWER}" != "y" && "${ANSWER}" != "Y" ]]; then
-  echo "Have a nice day!"
+# ## Check if the script are running under root user.
+if [ "${EUID}" -ne 0 ]; then
+  echo -n -e "\n\n\n\e[38;5;208mWARNING:This script must be run with sudo or as root.\e[0m"
   exit 0
+fi
+
+# ## Last chance - Ask before execution.
+echo -n -e "\n\e[38;5;208mWARNING:\e[0m You are preparing to install the Zabbix Agent service. Press 'y' to continue, or any other key to exit: "
+read -r ANSWER
+if [[ "${ANSWER}" != 'y' && "${ANSWER}" != 'Y' ]]; then
+  echo 'Have a nice day!'
+  exit 0
+fi
+
+# ## Don't uses distribution repo message.
+if [ ${installDefault} -eq 1 ]; then
+  echo -e "Do you realy want to install the distribution Zabbix Agent (Y/N) [default=N]?"
+  echo -e "If not, change \"installDefault\" parameter to '0' in this script."
+  read -r INSTALL
+  if [[ "${INSTALL}" != 'n' && "${INSTALL}" != 'N' ]]; then
+    echo 'Good choice!'
+    exit 0
+  fi
 fi
 
 
 #############################################################################################
 # ## FUNCTIONS
 
-# ## Added user specified Zabbix repository.
-function zx_repo {
- if [ ! -f /etc/apt/sources.list.d/zabbix.list ]; then
+# ## Added Zabbix repository.
+function zxRepo {
+ if [ ! -f '/etc/apt/sources.list.d/zabbix.list' ]; then
    echo -e "# ## Zabbix ${zbxVers} Repository" > /etc/apt/sources.list.d/zabbix.list
-   echo -e "deb http://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/  ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
-   echo -e "deb-src http://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/  ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
+   echo -e "deb https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
+   echo -e "deb-src https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
 
-   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 082AB56BA14FE591
+   apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 082AB56BA14FE591
    apt-get update
  else
-   echo -e "Source file already exist!"
+   echo -e 'INFO: Source file already exist!'
  fi
-
- # ## Zabbix agent install.
- zx_agent
 }
 
 # ## Installing the Zabbix Agent.
-function zx_agent {
+function zxAgent {
  apt-get install -y zabbix-agent
+ systemctl enable zabbix-agent
 }
 
-# ## 
-function zx_agent_cfg {
- if [ -f "/etc/zabbix/zabbix_agentd.conf" ]; then
+# ## Download optimal Zabbix Agent configuration.
+function zxAgentConfig {
+ if [ -f '/etc/zabbix/zabbix_agentd.conf' ]; then
    mv /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agentd.conf.ori
  fi
 
- wget -t 1 -T 5 ${protocol}://${urlDeploy}/configs/zabbix_agent/cfg_zbxagent.tgz -O cfg_zbxagent.tgz
- tar -xzvpf cfg_zbxagent.tgz
- cp zabbix_agentd.conf /etc/zabbix/
- rm cfg_zbxagent.tgz
- 
- # ## Generate the shared key (64-byte PSK).
- openssl rand -hex 64 > /etc/zabbix/zabbix_agentd.psk
+ if [ "${installDefault}" -eq 0 ]; then
+   cp configs/zabbix_agentd.conf /etc/zabbix/
+ else
+   cp configs/zabbix_agentd_notls.conf /etc/zabbix/zabbix_agentd.conf
+ fi
 }
+
+# ## Generate the shared key (64-byte PSK).
+function zxAgentTls {
+ if [ "${installDefault}" -eq 0 ]; then
+   echo -e 'Generation Zabbix Agent 64 bit Pre-Shared Key (PSK).'
+   openssl rand -hex 64 > /etc/zabbix/zabbix_agentd.psk
+ else
+   echo -e 'Zabbix Agent from Ubuntu repository do not support TLS.'
+ fi
+}
+
+# ## Creation of additional directories required.
+function zxDir {
+ if [ ! -d "${scriptLocation}" ]; then
+   mkdir -p "${scriptLocation}"/{externalscripts,alertscripts}
+   chown -R zabbix:zabbix "${scriptLocation}"/
+ fi
+
+ if [ ! -d '/var/run/zabbix/' ]; then
+   mkdir -p /var/run/zabbix/
+   chown -R zabbix:zabbix /var/run/zabbix/
+ fi
+
+ if [ ! -d '/var/log/zabbix-agent/' ]; then
+   mkdir -p /var/log/zabbix/
+   chown -R zabbix:zabbix /var/log/zabbix/
+ fi
+}
+
+
+# ##############
+# ## EXTRA
 
 # ##
 function zx_sensors {
@@ -116,49 +171,28 @@ function zx_tools {
  apt-get install -y zabbix-sender
 }
 
-function zx_dir {
- if [ ! -d "${scriptLocation}" ]; then
-   mkdir -p ${scriptLocation}/{externalscripts,alertscripts}
-   chown -R zabbix:zabbix ${scriptLocation}/
- fi
-
- if [ ! -d "/var/run/zabbix/" ]; then
-   mkdir -p /var/run/zabbix/
-   chown -R zabbix:zabbix /var/run/zabbix/
- fi
-
- if [ ! -d "/var/log/zabbix/" ]; then
-   mkdir -p /var/log/zabbix/
-   chown -R zabbix:zabbix /var/log/zabbix/
- fi
-}
-
 
 #############################################################################################
 # ## EXECUTION
 
-if [ "${installDefault}" -eq "0" ]; then
-  # ## Added elf selected Zabbix repository.
-  zx_repo
+# ## Set Zabbix repository for installation.
+if [ "${installDefault}" -eq 0 ]; then
+ # ## Added Zabbix repository as per setting.
+ zxRepo
+ zxAgent
 else
-  # ## Installing the Zabbix Agent.
-  zx_agent
+ # ## Installing Zabbix Agent.
+ zxAgent
 fi
 
-# ##
-zx_agent_cfg
+# ## Generate the shared key (64 byte PSK).
+zxAgentTls
 
-# ## Create PSK file (only if installDefault=0).
-zx_agent_tls
+# ## Copy of the ready-to-use simplified configuration file.
+zxAgentConfig
 
-# ## Installing Zabbix tools.
-zx_tools
-
-# ## Installing hardware sensor.
-zx_sensors
-
-# ## Activate Zabbix Agent service.
-systemctl enable zabbix-agent
+# ## Creation of the necessary directories for Zabbix.
+zxDir
 
 
 # ##
