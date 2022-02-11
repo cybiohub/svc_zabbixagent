@@ -59,8 +59,8 @@ The `vx_zbxagent.sh` application does not require any additional packages to wor
 	# TLS PSK Identity for your Zabbix Agent.
 	TLSPSKIdentity=YOURZABBIXAGENT
 	
- # IP address of the Zabbix server(s) authorized (passive).
-		Server=W.X.Y.Z
+	# IP address of the Zabbix server(s) authorized (passive).
+	Server=W.X.Y.Z
 	
 	# Name identifying the Zabbix Proxy to the Zabbix server.
 	Hostname=YOURZABBIXAGENT
