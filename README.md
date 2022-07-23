@@ -1,5 +1,4 @@
-| ![alt text][logo] | Integration & Securite Systeme |
-| ------------- |:-------------:|
+![alt text][logo]
 
 # Cybionet - Ugly Codes Division
 
