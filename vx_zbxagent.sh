@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:		(c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               vx_zbxagent.sh
-# * Version:            0.1.9
+# * Version:            0.1.11
 # *
-# * Comment:            Zabbix Agent LTS installation script under Ubuntu LTS Server.
+# * Description:	Zabbix Agent LTS installation script under Ubuntu LTS Server.
 # *
 # * Creation: September 04, 2017
-# * Change:   February 10, 2022
+# * Change:   August 27, 2022
 # *
 # ****************************************************************************
 
@@ -22,18 +22,22 @@
 # ## Value: enabled (true), disabled (false).
 isConfigured='false'
 
-# ## Do you want to install the distribution Zabbix Agent [0=Zabbix Repo (recommended), 1=Distribution Repo].
+# ## Choose the repository from which you want to install Zabbix Agent (0=Zabbix Repo (recommended), 1=Distribution Repo).
 installDefault=0
 
 # ## Zabbix Agent version.
-# ## 3.x: 3.0, 3.2, 3.4 (Obsolete)
+# ## 3.x: 3.0, 3.2, 3.4
 # ## 4.x: 4.0, 4.2, 4.5
 # ## 5.x: 5.0, 5.5
-# ## 3.0, 4.0 and 5.0 are LTS version.
-zbxVers='5.0'
+# ## 6.x: 6.0
+# ## 4.0, 5.0 and 6.0 are LTS version.
+zbxVers='6.0'
 
-# ## (Without the trailing slash)
+# ## Local scripts location (Without the trailing slash).
 scriptLocation="/opt/zabbix"
+
+# ## Installing zabbix-agent2 instead (https://www.zabbix.com/documentation/5.0/en/manual/appendix/agent_comparison).
+agent2=0
 
 
 #############################################################################################
@@ -74,7 +78,7 @@ fi
 # ## Last chance - Ask before execution.
 echo -n -e "\n\e[38;5;208mWARNING:\e[0m You are preparing to install the Zabbix Agent service. Press 'y' to continue, or any other key to exit: "
 read -r ANSWER
-if [[ "${ANSWER}" != 'y' && "${ANSWER}" != 'Y' ]]; then
+if [ "${ANSWER}" != ',,y' ]; then
   echo 'Have a nice day!'
   exit 0
 fi
@@ -84,7 +88,7 @@ if [ ${installDefault} -eq 1 ]; then
   echo -e "Do you realy want to install the distribution Zabbix Agent (Y/N) [default=N]?"
   echo -e "If not, change \"installDefault\" parameter to '0' in this script."
   read -r INSTALL
-  if [[ "${INSTALL}" != 'n' && "${INSTALL}" != 'N' ]]; then
+  if [ "${INSTALL}" != ',,n' ]; then
     echo 'Good choice!'
     exit 0
   fi
@@ -110,8 +114,17 @@ function zxRepo {
 
 # ## Installing the Zabbix Agent.
 function zxAgent {
- apt-get install -y zabbix-agent
- systemctl enable zabbix-agent
+ if [ "${agent2}" -eq 1 ]; then
+   if [[ "${zbxVers}" =~ ^5|^6 ]]; then
+     apt-get install -y zabbix-agent2
+     systemctl enable zabbix-agent2
+   else
+     echo  "ERROR: Zabbix Agent 2 is not compatible with the requested Zabbix version. It must be version 5.x or 6.x."
+   fi
+ else
+   apt-get install -y zabbix-agent
+   systemctl enable zabbix-agent
+ fi
 }
 
 # ## Download optimal Zabbix Agent configuration.
@@ -196,7 +209,7 @@ zxDir
 
 
 # ##
-echo -n -e "\n\n\n\e[38;5;208mWARNING:Please configure the file /etc/zabbix/zabbix_agentd.conf.\e[0m"
+echo -n -e "\n\n\n\e[38;5;208mWARNING:Please configure the file /etc/zabbix/zabbix_agentd.conf.\n\e[0m"
 
 # ## Exit.
 exit 0

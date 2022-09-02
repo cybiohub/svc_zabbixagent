@@ -1,2 +1,0 @@
-# ## Zabbix Agent Checker.
-*/10 * * * * root /opt/zabbix/zabbix_agent.sh >/dev/null 2>&1

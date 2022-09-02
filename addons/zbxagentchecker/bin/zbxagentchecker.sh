@@ -4,23 +4,23 @@
 # *
 # * Author:	   	(c) 2004-2022  Cybionet - Ugly Codes Division
 # *
-# * File:       	zabbix_agent.sh
-# * Version:    	0.0.16
+# * File:       	zbxagentchecker.sh
+# * Version:    	0.0.17
 # *
 # * Description:    	This script checks if the zabbix_agent service is functional.
 # *             	Otherwise, it sends an alert in the desired format.
 # *
-# * Ceattion: August 29, 2007
-# * Change:   March 12, 2022
+# * Creation: August 29, 2007
+# * Change:   August 27, 2022
 # *
 # ****************************************************************************
 # *
 # * Add the following value to the crontab.
 # *
-# * vim /etc/cron.d/zabbix_agent
+# * vim /etc/cron.d/zbxagentchecker
 # *
 # * # Zabbix Agent Service
-#   */10 * * * * root /opt/zabbix/zabbix_agent.sh >/dev/null 2>&1
+#   */10 * * * * root /opt/zabbix/zbxagentchecker.sh >/dev/null 2>&1
 # *
 # *
 # * Note:
@@ -42,7 +42,7 @@
 # ## Configuring email sending.
 #TO='alerts@example.com'
 #TO='alerts@example.com,alerts2@example.com'
-readonly TO='alerte@cybionet.com'
+readonly TO='alerte@example.com'
 
 # ## Configuring the sending of SMS (Necessity that the QPage software is functional).
 readonly PAGER='8886664444'
@@ -51,7 +51,7 @@ readonly PAGER='8886664444'
 readonly LOG='/var/log/zabbix'
 
 # ## Log name.
-readonly LOGNAME='agentd_check.log'
+readonly LOGNAME='zbxagentd_check.log'
 
 # ## Location of the zabbix_agent.conf configuration file.
 #readonly CONF='/etc/zabbix/zabbix_agent.conf'
@@ -100,7 +100,9 @@ email() {
  echo -e "${HOSTNAME}: ${MESSAGE} \n\n${DATE}\n" > agentd_check.err
 
  # ## Sends email via Ubuntu / Debian.
- cat agentd_check.err | /usr/bin/mail -s "${SUBJECT}" "${TO}"
+#cat agentd_check.err | /usr/bin/mail -s "${SUBJECT}" "${TO}"
+ /usr/bin/mail -s "${SUBJECT}" "${TO}" < agentd_check.err
+ 
 
  # ## Delete the temporary sending file.
  rm agentd_check.err
@@ -149,7 +151,7 @@ defunctProcess() {
  #declare -i P_ITEM1=$(cat $LOG/zabbix_agentd.log | grep -c -i 'One child process died')
 
  #P_STATUS=$(($P_ITEM0+$P_ITEM1))
- P_STATUS=$((${P_ITEM0}))
+ P_STATUS=$((P_ITEM0))
  MESSAGE="${MESSAGE8}"
 
  # ## Attempt to reboot before sending an alarm.
@@ -174,14 +176,14 @@ checkConnectivity() {
 system() {
 # ## BUG: SI IL Y A UNE ERREUR DANS LE LOG CETTE CETTE SECTION RESTE TOUJOURS ACTIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  # ## Can't find shared memory for database cache.
- S_ITEM0=$(cat "${LOG}/zabbix_agentd.log" | grep -c -i 'Listener failed with error')
+ S_ITEM0=$(<"${LOG}/zabbix_agentd.log" grep -c -i 'Listener failed with error')
  declare -i S_ITEM0
 
  # ## Listener failed with error.
  S_ITEM1=$(grep -c -i 'Listener failed with error' < /var/log/zabbix/zabbix_agentd.log)
  declare -i S_ITEM1
 
- S_STATUS=$((${S_ITEM0}+${S_ITEM1}))
+ S_STATUS=$((S_ITEM0+S_ITEM1))
  MESSAGE="${MESSAGE4}"
 
  # ## Zabbix service configuration problem.
