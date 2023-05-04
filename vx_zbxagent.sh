@@ -78,7 +78,7 @@ fi
 # ## Last chance - Ask before execution.
 echo -n -e "\n\e[38;5;208mWARNING:\e[0m You are preparing to install the Zabbix Agent service. Press 'y' to continue, or any other key to exit: "
 read -r ANSWER
-if [ "${ANSWER}" != ',,y' ]; then
+if [ "${ANSWER,,}" != 'y' ]; then
   echo 'Have a nice day!'
   exit 0
 fi
@@ -88,7 +88,7 @@ if [ ${installDefault} -eq 1 ]; then
   echo -e "Do you realy want to install the distribution Zabbix Agent (Y/N) [default=N]?"
   echo -e "If not, change \"installDefault\" parameter to '0' in this script."
   read -r INSTALL
-  if [ "${INSTALL}" != ',,n' ]; then
+  if [ "${INSTALL,,}" != 'n' ]; then
     echo 'Good choice!'
     exit 0
   fi
