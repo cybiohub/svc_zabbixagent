@@ -30,7 +30,7 @@ The `vx_zbxagent.sh` application does not require any additional packages to wor
 	unzip svc_zabbixagent.zip
 	```
 
-3. Make changes to the installation script to configure it to match your environment.
+3. Make changes to the installation script `vx_zbxagent.sh` to configure it to match your environment.
 	
 	You can customize the following settings: 
 
