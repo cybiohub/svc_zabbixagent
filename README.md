@@ -22,7 +22,7 @@ The `vx_zbxagent.sh` application does not require any additional packages to wor
 
 1. Download files from this repository directly with git or via https.
 	```bash
-	wget -o svc_zabbixagent.zip https://github.com/cybiohub/svc_zabbixagent/archive/refs/heads/main.zip
+	wget -O svc_zabbixagent.zip https://github.com/cybiohub/svc_zabbixagent/archive/refs/heads/main.zip
 	```
 
 2. Unzip the zip file.
