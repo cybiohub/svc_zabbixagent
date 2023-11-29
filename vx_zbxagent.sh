@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:		(c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:		(c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               vx_zbxagent.sh
-# * Version:            0.1.11
+# * Version:            0.1.12
 # *
 # * Description:	Zabbix Agent LTS installation script under Ubuntu LTS Server.
 # *
 # * Creation: September 04, 2017
-# * Change:   August 27, 2022
+# * Change:   November 29, 2023
 # *
 # ****************************************************************************
 
@@ -105,7 +105,9 @@ function zxRepo {
    echo -e "deb https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
    echo -e "deb-src https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
 
+   # ## DEPRECIATED METHOD.
    apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 082AB56BA14FE591
+   apt-key export A14FE591 | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/zabbix.gpg
    apt-get update
  else
    echo -e 'INFO: Source file already exist!'
@@ -134,7 +136,12 @@ function zxAgentConfig {
  fi
 
  if [ "${installDefault}" -eq 0 ]; then
-   cp configs/zabbix_agentd.conf /etc/zabbix/
+   # ## Check in case the deployment of Zabbix repo did not work.
+   if [ -d "/etc/zabbix/zabbix_agentd.conf.d/" ]; then
+     cp configs/zabbix_agentd_notls.conf /etc/zabbix/zabbix_agentd.conf
+   else
+     cp configs/zabbix_agentd.conf /etc/zabbix/
+   fi
  else
    cp configs/zabbix_agentd_notls.conf /etc/zabbix/zabbix_agentd.conf
  fi
@@ -164,6 +171,7 @@ function zxDir {
 
  if [ ! -d '/var/log/zabbix-agent/' ]; then
    mkdir -p /var/log/zabbix/
+   touch /var/log/zabbix/zabbix_agentd.log
    chown -R zabbix:zabbix /var/log/zabbix/
  fi
 }
