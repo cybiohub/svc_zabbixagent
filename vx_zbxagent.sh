@@ -2,7 +2,7 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:		(c) 2004-2023  Cybionet - Ugly Codes Division
+# * Author:		(c) 2004-2024  Cybionet - Ugly Codes Division
 # *
 # * File:               vx_zbxagent.sh
 # * Version:            0.1.12
@@ -10,7 +10,7 @@
 # * Description:	Zabbix Agent LTS installation script under Ubuntu LTS Server.
 # *
 # * Creation: September 04, 2017
-# * Change:   November 29, 2023
+# * Change:   July 22, 2024
 # *
 # ****************************************************************************
 
@@ -18,7 +18,7 @@
 #############################################################################################
 # ## CUSTOM VARIABLES
 
-# ## Force configuration of the script.
+# ## Set this setting to 'true' after you finish configuring the settings for this installation script.
 # ## Value: enabled (true), disabled (false).
 isConfigured='false'
 
@@ -26,14 +26,14 @@ isConfigured='false'
 installDefault=0
 
 # ## Zabbix Agent version.
-# ## 3.x: 3.0, 3.2, 3.4
-# ## 4.x: 4.0, 4.2, 4.5
+# ## 4.x: 4.0, 4.2, 4.5 (Obsolete)
 # ## 5.x: 5.0, 5.5
-# ## 6.x: 6.0
-# ## 4.0, 5.0 and 6.0 are LTS version.
-zbxVers='6.0'
+# ## 6.x: 6.0, 6.5
+# ## 7.x: 7.0
+# ## 5.0, 6.0 and 7.0 are LTS version.
+zbxVers='7.0'
 
-# ## Local scripts location (Without the trailing slash).
+# ## Location of the directory containing the scripts used for the Zabbix server (Without the trailing slash).
 scriptLocation="/opt/zabbix"
 
 # ## Installing zabbix-agent2 instead (https://www.zabbix.com/documentation/5.0/en/manual/appendix/agent_comparison).
@@ -48,16 +48,16 @@ declare -ir installDefault
 declare -r zbxVers
 declare -r scriptLocation
 
-# ## Distribution: ubuntu, debian, raspbian.
-osDist=$(lsb_release -i | awk '{print $3}')
-declare -r osDist
+# ## Supported distribution: ubuntu, debian, raspbian.
+osDistribution=$(lsb_release -i | awk '{print $3}')
+declare -r osDistribution
 
-# ## Supported version.
-# ## Ubuntu: focal, bionic, trusty.
-# ## Debian: bulleye, buster, jessie, stretch.
-# ## Raspbian: buster, stretch.
-osVers=$(lsb_release -c | awk '{print $2}')
-declare -r osVers
+# ## Version of supported distributions.
+# ## Ubuntu: 20.04, 22.04, 24.04
+# ## Debian: 11, 12
+# ## Raspbian: 11, 12
+osRelease=$(lsb_release -r | awk '{print $2}')
+declare -r osRelease
 
 
 #############################################################################################
@@ -69,7 +69,7 @@ if [ "${isConfigured}" == 'false' ] ; then
   exit 0
 fi
 
-# ## Check if the script are running under root user.
+# ## Check if the script are running with sudo or under root user.
 if [ "${EUID}" -ne 0 ]; then
   echo -n -e "\n\n\n\e[38;5;208mWARNING:This script must be run with sudo or as root.\e[0m"
   exit 0
@@ -100,28 +100,20 @@ fi
 
 # ## Added Zabbix repository.
 function zxRepo {
- if [ ! -f '/etc/apt/sources.list.d/zabbix.list' ]; then
-   echo -e "# ## Zabbix ${zbxVers} Repository" > /etc/apt/sources.list.d/zabbix.list
-   echo -e "deb https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
-   echo -e "deb-src https://repo.zabbix.com/zabbix/${zbxVers}/${osDist,,}/ ${osVers} main contrib non-free" >> /etc/apt/sources.list.d/zabbix.list
+   wget -q -O zabbix-release_${zbxVers}.deb https://repo.zabbix.com/zabbix/"${zbxVers}"/"${osDistribution,,}"/pool/main/z/zabbix-release/zabbix-release_latest+"${osDistribution,,}${osRelease}"_all.deb
+   dpkg -i zabbix-release_${zbxVers}.deb
 
-   # ## DEPRECIATED METHOD.
-   apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 082AB56BA14FE591
-   apt-key export A14FE591 | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/zabbix.gpg
    apt-get update
- else
-   echo -e 'INFO: Source file already exist!'
- fi
 }
 
 # ## Installing the Zabbix Agent.
 function zxAgent {
  if [ "${agent2}" -eq 1 ]; then
-   if [[ "${zbxVers}" =~ ^5|^6 ]]; then
+   if [[ "${zbxVers}" =~ ^5|^6|^7 ]]; then
      apt-get install -y zabbix-agent2
      systemctl enable zabbix-agent2
    else
-     echo  "ERROR: Zabbix Agent 2 is not compatible with the requested Zabbix version. It must be version 5.x or 6.x."
+     echo  "ERROR: Zabbix Agent 2 is not compatible with the requested Zabbix version. It must be version 5.x, 6.x or 7.x."
    fi
  else
    apt-get install -y zabbix-agent
@@ -159,16 +151,19 @@ function zxAgentTls {
 
 # ## Creation of additional directories required.
 function zxDir {
+ # ## Creation of the location for the Zabbix agent scripts if the directory does not exist.
  if [ ! -d "${scriptLocation}" ]; then
    mkdir -p "${scriptLocation}"/{externalscripts,alertscripts}
    chown -R zabbix:zabbix "${scriptLocation}"/
  fi
 
+ # ## Creation of the directory in run for the Zabbix agent process if it does not exist.
  if [ ! -d '/var/run/zabbix/' ]; then
    mkdir -p /var/run/zabbix/
    chown -R zabbix:zabbix /var/run/zabbix/
  fi
 
+ # ## Creation of the log directory for the Zabbix agent if it does not exist.
  if [ ! -d '/var/log/zabbix-agent/' ]; then
    mkdir -p /var/log/zabbix/
    touch /var/log/zabbix/zabbix_agentd.log
@@ -179,12 +174,6 @@ function zxDir {
 
 # ##############
 # ## EXTRA
-
-# ##
-function zx_sensors {
- apt-get install -y smartmontools
- apt-get install -y lm-sensors
-}
 
 # ## Installing Zabbix tools.
 function zx_tools {

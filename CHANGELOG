@@ -1,3 +1,11 @@
+v0.1.11 - 2024-07-22
+## Fixed
+  - Fixed the process of adding the Zabbix repo.
+
+## Added
+  - Now Zabbix 7.x is supported.
+
+
 v0.1.10 - 2023-11-29
 ## Fixed
   - Fix the Zabbix repository registration process (Still deprecated).
